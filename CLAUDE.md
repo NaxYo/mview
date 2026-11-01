@@ -91,16 +91,16 @@ on in Cargo.toml), installs it to `~/.local/bin/mdview`, writes
 Run it after every change — he only uses the app by double-clicking files.
 
 Checking the UI: do **not** click around his real screen with xdotool (dual monitors,
-3840×1080; clicks landed in his browser). There is no Xvfb. Headless Chrome screenshots of
-a scrolled page come out blank — test scroll behaviour by logging values, not by picture.
-Do not name a global `top` in `app.js` (it is `window.top`; the whole script fails). Instead load `src/` in headless Chrome:
+3840×1080; clicks landed in his browser). Instead load `src/` in headless Chrome:
 a scratch HTML copy of `index.html` with absolute `file://` paths to the project's
 css/js, a `stub.js` defining `window.__TAURI__` (`core.invoke` returning fake
 `initial_path`/`render` results, `core.convertFileSrc`, `event.listen`,
 `window.getCurrentWindow`), optional `localStorage` seed, and a script that clicks `#fab`
 on load. Then:
 `google-chrome --headless=new --disable-gpu --allow-file-access-from-files --user-data-dir=<scratch> --window-size=1100,850 --virtual-time-budget=2000 --screenshot=<png> file://<scratch>/index.html`
-and read the PNG.
+and read the PNG. Headless screenshots of a scrolled page come out blank: check scroll
+behaviour by logging values, not by picture. There is no Xvfb. Do not name a global `top`
+in `app.js` (it is `window.top`; the whole script fails).
 
 Rendering check in the real app: `src-tauri/target/release/mdview /path/file.md`, then
 capture with `import -window root -crop …` (the reported window geometry is offset by the
