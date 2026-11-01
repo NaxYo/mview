@@ -141,8 +141,8 @@ document.addEventListener("pointerdown", (e) => {
 // The trail is drawn as breadcrumbs; a click on a crumb goes back to it.
 // Only the active tab is rendered; the others render when you switch to them.
 
-const bar = $("top"), tabBar = $("tabs"), crumbs = $("crumbs");
-const tabs = [];   // { hist: [{ path, hash, y }], i }
+const start = $("start"), bar = $("top"), tabBar = $("tabs"), crumbs = $("crumbs");
+const tabs = [];   // { hist: [{ path, text?, hash, y }], i }  (text = pasted, no file)
 let active = -1;
 let current = null; // { path, dir } of the rendered file
 let seq = 0;        // drops renders that finish after a newer one started
@@ -150,7 +150,8 @@ let seq = 0;        // drops renders that finish after a newer one started
 const tab = () => tabs[active];
 const entry = () => tab()?.hist[tab().i];
 const baseName = (p) => p.split("/").pop();
-const label = (p) => baseName(p).replace(/\.(md|markdown)$/i, "");
+const label = (h) => h.text != null ? "Pasted" : baseName(h.path).replace(/\.(md|markdown)$/i, "");
+const where = (h) => h.text != null ? "Pasted Markdown" : h.path;
 
 function saveScroll() {
   if (entry()) entry().y = window.scrollY;
@@ -204,13 +205,13 @@ function closeTab(k) {
 // Tab strip (only with 2+ tabs) and breadcrumbs (only after following a link).
 function drawBar() {
   tabBar.replaceChildren(...tabs.map((t, k) => {
-    const p = t.hist[t.i].path;
+    const h = t.hist[t.i];
     const el = document.createElement("div");
     el.className = "tab";
-    el.title = p;
+    el.title = where(h);
     el.setAttribute("aria-selected", String(k === active));
     const name = document.createElement("span");
-    name.textContent = label(p);
+    name.textContent = label(h);
     const x = document.createElement("button");
     x.className = "close";
     x.textContent = "×";
@@ -234,8 +235,8 @@ function drawBar() {
     }
     const c = document.createElement("button");
     c.className = "crumb" + (i > t.i ? " ahead" : "");
-    c.textContent = label(h.path);
-    c.title = h.path;
+    c.textContent = label(h);
+    c.title = where(h);
     if (i === t.i) c.setAttribute("aria-current", "page");
     c.addEventListener("click", () => goTo(i));
     crumbs.append(c);
@@ -254,14 +255,18 @@ async function show(y) {
   drawBar();
   const e = entry();
   if (!e) return;
+  start.hidden = true;
+  doc.hidden = false;
   const n = ++seq;
   try {
-    const res = await invoke("render", { path: e.path, breaks: settings.breaks });
+    const res = e.text != null
+      ? await invoke("render_text", { text: e.text, breaks: settings.breaks })
+      : await invoke("render", { path: e.path, breaks: settings.breaks });
     if (n !== seq) return;
-    e.path = res.path;
+    if (e.text == null) e.path = res.path;
     current = { path: res.path, dir: res.dir };
     doc.innerHTML = res.html;
-    fixImages(res.dir);
+    if (res.dir) fixImages(res.dir);
     addHeadingIds();
   } catch (err) {
     if (n !== seq) return;
@@ -336,7 +341,9 @@ function follow(e, inTab) {
     const [rel, hash = ""] = href.split("#");
     const file = decodeURI(rel);
     if (!/\.(md|markdown)$/i.test(file)) return;
-    const path = resolve(current.dir, file);
+    // Pasted text has no folder: only absolute paths can be followed.
+    if (!current.dir && !file.startsWith("/")) return;
+    const path = resolve(current.dir || "/", file);
     const id = decodeURIComponent(hash);
     if (inTab) newTab(path, id, e.shiftKey);
     else navigate(path, id);
@@ -401,4 +408,34 @@ window.__TAURI__.event.listen("tauri://drag-drop", (ev) => {
 // ---------- Start ----------
 
 buildList();
-invoke("initial_path").then((p) => { if (p) navigate(p); });
+// ---------- Paste (start screen when opened without a file) ----------
+// Paste Markdown and it opens like a file. There is no editing after that.
+
+const pasteBox = $("paste");
+
+function openPasted(text) {
+  if (!text.trim() || tabs.length) return;
+  tabs.push({ hist: [{ path: null, text, hash: "", y: null }], i: 0 });
+  active = 0;
+  show();
+}
+
+// Ctrl+V anywhere on the start screen (the box has focus anyway).
+document.addEventListener("paste", (e) => {
+  if (tabs.length) return;
+  e.preventDefault();
+  openPasted(e.clipboardData?.getData("text/plain") || "");
+});
+// Middle-click paste (X primary selection) arrives as an input, not a paste event.
+pasteBox.addEventListener("input", (e) => {
+  if (/^insertFrom(Paste|Drop)/.test(e.inputType || "")) openPasted(pasteBox.value);
+});
+// Typed text: Ctrl+Enter shows it.
+pasteBox.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); openPasted(pasteBox.value); }
+});
+
+invoke("initial_path").then((p) => {
+  if (p) navigate(p);
+  else { doc.hidden = true; pasteBox.parentElement.hidden = false; pasteBox.focus(); }
+});

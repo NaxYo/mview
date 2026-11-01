@@ -18,6 +18,9 @@ plugins or settings screens. Exactly four features:
 1. **Double-click a `.md` file → it opens.** The file manager passes the path as the
    first argument; the app renders it. Dropping a file on the window also opens it.
    Each double-click opens its own window.
+   Opened with no file (from the app menu), it shows one big paste box: paste Markdown
+   (Ctrl+V or middle-click; Ctrl+Enter for typed text) and it is shown like a file, titled
+   "Pasted". No editing after that. Relative links/images in pasted text cannot resolve.
 2. **Themes** — 25 presets of colours + fonts + size + line spacing, plus A−/A+ text size.
    A star on a theme pins it to the top of the list. Everything is remembered between launches.
 3. **Full width / Line breaks switch.** "Full width" joins the file's soft line breaks so
@@ -50,11 +53,11 @@ when the file changes, table of contents, search, printing/export.
 
 | Path | What it is |
 |---|---|
-| `src/index.html` | The page: document area, floating button, menu markup |
+| `src/index.html` | The page: tabs/breadcrumbs bar, document area, paste box, floating button, menu |
 | `src/style.css` | Layout, menu styles, Markdown styles. All colours/fonts are CSS variables |
 | `src/themes.js` | The theme list (data only) |
 | `src/app.js` | Settings, theme menu + stars, rendering calls, links, images, shortcuts |
-| `src-tauri/src/main.rs` | Rust: read file + render Markdown, initial path from argv, open web links via `xdg-open` |
+| `src-tauri/src/main.rs` | Rust: read file + render Markdown (or pasted text), initial path from argv, open web links via `xdg-open` |
 | `src-tauri/tauri.conf.json` | Window, CSP, asset protocol (for local images), bundling off |
 | `src-tauri/capabilities/default.json` | `core:default` + window close |
 | `src-tauri/icons/` | App icon (generated with PIL; brown "M↓" on paper) |

@@ -23,6 +23,18 @@ body {
 #doc { padding: 2.2em 3em 6em; overflow-wrap: break-word; }
 .empty { color: var(--muted); text-align: center; margin-top: 30vh; }
 
+/* Start screen when opened without a file: one big paste box. */
+#start { position: fixed; inset: 0; padding: 28px 28px 96px; display: flex; }
+#start[hidden], #doc[hidden] { display: none; }
+#paste {
+  flex: 1; resize: none; padding: 1.4em 1.6em;
+  background: var(--code-bg); color: var(--fg);
+  border: 2px dashed var(--border); border-radius: 16px; outline: none;
+  font: calc(15px * var(--zoom, 1))/1.5 var(--mono);
+}
+#paste:focus { border-color: var(--accent); }
+#paste::placeholder { color: var(--muted); font-family: var(--ui); font-size: 1.25em; }
+
 /* ---------- Tabs + breadcrumbs (top bar, only when needed) ---------- */
 
 #top {
