@@ -5,17 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Markdown Viewer</title>
   <link rel="stylesheet" href="style.css">
+  <script src="themes.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div id="bar" role="toolbar" aria-label="View settings">
-    <select id="theme" title="Theme" aria-label="Theme"></select>
-    <button id="smaller" title="Smaller text (Ctrl -)" aria-label="Smaller text">A−</button>
-    <button id="bigger" title="Bigger text (Ctrl +)" aria-label="Bigger text">A+</button>
-    <button id="wrap" title="Switch between full-width lines and the file's own line breaks"></button>
-  </div>
   <main id="doc">
     <p class="empty">Double-click a <code>.md</code> file, or drop one here.</p>
   </main>
+
+  <div id="menu" role="dialog" aria-label="View settings" hidden>
+    <div class="row">
+      <span class="label">Text size</span>
+      <div class="stepper">
+        <button id="smaller" aria-label="Smaller text">A−</button>
+        <span id="zoomval">100%</span>
+        <button id="bigger" aria-label="Bigger text">A+</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="label">Lines</span>
+      <div class="segmented" role="radiogroup" aria-label="Line layout">
+        <button id="full" role="radio">Full width</button>
+        <button id="breaks" role="radio">Line breaks</button>
+      </div>
+    </div>
+    <div id="themes" role="listbox" aria-label="Theme"></div>
+  </div>
+
+  <button id="fab" aria-label="View settings" aria-expanded="false" title="View settings">Aa</button>
 </body>
 </html>
