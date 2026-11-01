@@ -87,6 +87,19 @@ body {
 #fab:hover, #fab[aria-expanded="true"] { opacity: 1; }
 #fab:active { transform: scale(.94); }
 
+/* Shows when the open file changed on disk; a click reloads it. */
+#reload {
+  position: fixed; right: 88px; bottom: 27px; z-index: 20;
+  width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: var(--accent); color: var(--bg);
+  font: 600 22px/1 var(--ui); cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,.28);
+  animation: pop .18s ease-out;
+}
+#reload[hidden] { display: none; }
+#reload:hover { filter: brightness(1.12); }
+#reload:active { transform: scale(.94); }
+
 #menu {
   position: fixed; right: 22px; bottom: 90px; z-index: 20;
   width: 330px; max-height: calc(100vh - 120px);

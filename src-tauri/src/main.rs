@@ -9,6 +9,19 @@ struct Doc {
     path: String,
     dir: String,
     html: String,
+    /// File's modification time (ms) when it was read; 0 for pasted text.
+    mtime: u64,
+}
+
+fn mtime_of(p: &Path) -> Option<u64> {
+    let t = std::fs::metadata(p).ok()?.modified().ok()?;
+    Some(t.duration_since(std::time::UNIX_EPOCH).ok()?.as_millis() as u64)
+}
+
+/// Modification time of a file, polled by the page to notice changes on disk.
+#[tauri::command]
+fn file_mtime(path: String) -> Option<u64> {
+    mtime_of(Path::new(&path))
 }
 
 /// The file passed on the command line (what the file manager sends on double click).
@@ -45,6 +58,8 @@ fn to_html(text: &str, breaks: bool) -> String {
 #[tauri::command]
 fn render(window: tauri::WebviewWindow, path: String, breaks: bool) -> Result<Doc, String> {
     let p = PathBuf::from(&path);
+    // Read the time before the text: a save in between then still shows as a change.
+    let mtime = mtime_of(&p).unwrap_or(0);
     let text = std::fs::read_to_string(&p).map_err(|e| format!("Cannot open {path}: {e}"))?;
 
     let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -54,6 +69,7 @@ fn render(window: tauri::WebviewWindow, path: String, breaks: bool) -> Result<Do
         dir: p.parent().unwrap_or(Path::new("/")).to_string_lossy().into_owned(),
         html: to_html(&text, breaks),
         path,
+        mtime,
     })
 }
 
@@ -61,7 +77,7 @@ fn render(window: tauri::WebviewWindow, path: String, breaks: bool) -> Result<Do
 #[tauri::command]
 fn render_text(window: tauri::WebviewWindow, text: String, breaks: bool) -> Doc {
     let _ = window.set_title("Pasted Markdown");
-    Doc { path: String::new(), dir: String::new(), html: to_html(&text, breaks) }
+    Doc { path: String::new(), dir: String::new(), html: to_html(&text, breaks), mtime: 0 }
 }
 
 /// Open web links in the default browser instead of inside the viewer.
@@ -79,7 +95,7 @@ fn open_external(url: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![initial_path, render, render_text, open_external])
+        .invoke_handler(tauri::generate_handler![initial_path, render, render_text, file_mtime, open_external])
         .run(tauri::generate_context!())
         .expect("error while running the viewer");
 }

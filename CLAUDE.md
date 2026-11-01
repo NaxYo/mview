@@ -36,6 +36,11 @@ plugins or settings screens. Exactly four features:
    single file looks exactly as before. Only the active tab is rendered. Tabs are not
    remembered between launches.
 
+**File watch, manual reload** (asked 2026-11-02). The open file's modification time is
+polled every second. When it changes, a smaller round ↻ button appears left of "Aa"; a click
+(or F5 / Ctrl+R) re-renders and keeps the scroll position, and the button goes away until the
+next change. Never reload by itself — he chose a button over live reload.
+
 All settings sit behind one round "Aa" floating button at the bottom right that opens a
 mobile-style menu (text size, Full width / Line breaks, theme list with stars). Esc or a
 click outside closes it. Keep it that way — no toolbars, no menu bars, no settings window.
@@ -46,8 +51,8 @@ work (also `file.md#heading` across files), Ctrl +/−/0 for size, Ctrl W closes
 (the window when it is the last), Ctrl Q closes the window, Ctrl Tab / Ctrl PgUp/PgDn
 switch tabs, Alt ←/→ and the mouse back/forward buttons move along the trail.
 
-Not built (on purpose, until he asks): syntax highlighting in code blocks, live reload
-when the file changes, table of contents, search, printing/export.
+Not built (on purpose, until he asks): syntax highlighting in code blocks, automatic live
+reload (see the ↻ button instead), table of contents, search, printing/export.
 
 ## Files
 

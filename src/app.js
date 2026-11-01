@@ -28,7 +28,7 @@ settings.starred = settings.starred.filter((id) => byId[id]);
 // ---------- Elements ----------
 
 const $ = (id) => document.getElementById(id);
-const doc = $("doc"), fab = $("fab"), menu = $("menu"), list = $("themes");
+const doc = $("doc"), fab = $("fab"), reloadBtn = $("reload"), menu = $("menu"), list = $("themes");
 
 // ---------- Applying the view ----------
 
@@ -144,7 +144,7 @@ document.addEventListener("pointerdown", (e) => {
 const start = $("start"), bar = $("top"), tabBar = $("tabs"), crumbs = $("crumbs");
 const tabs = [];   // { hist: [{ path, text?, hash, y }], i }  (text = pasted, no file)
 let active = -1;
-let current = null; // { path, dir } of the rendered file
+let current = null; // { path, dir, mtime } of the rendered file
 let seq = 0;        // drops renders that finish after a newer one started
 
 const tab = () => tabs[active];
@@ -264,13 +264,15 @@ async function show(y) {
       : await invoke("render", { path: e.path, breaks: settings.breaks });
     if (n !== seq) return;
     if (e.text == null) e.path = res.path;
-    current = { path: res.path, dir: res.dir };
+    current = { path: res.path, dir: res.dir, mtime: res.mtime };
+    reloadBtn.hidden = true;
     doc.innerHTML = res.html;
     if (res.dir) fixImages(res.dir);
     addHeadingIds();
   } catch (err) {
     if (n !== seq) return;
     current = null;
+    reloadBtn.hidden = true;
     doc.innerHTML = "";
     const p = document.createElement("p");
     p.className = "empty";
@@ -380,6 +382,7 @@ $("breaks").addEventListener("click", () => setBreaks(true));
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { setMenu(false); return; }
+  if (e.key === "F5") { e.preventDefault(); reload(); return; }
   if (e.altKey && !e.ctrlKey) {
     if (e.key === "ArrowLeft") { e.preventDefault(); goTo(tab()?.i - 1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); goTo(tab()?.i + 1); }
@@ -395,6 +398,7 @@ document.addEventListener("keydown", (e) => {
     const step = e.key === "PageUp" || (e.key === "Tab" && e.shiftKey) ? -1 : 1;
     if (n > 1) activate((active + step + n) % n);
   }
+  else if (e.key === "r") { e.preventDefault(); reload(); }
   else if (e.key === "w") { e.preventDefault(); closeTab(active); }
   else if (e.key === "q") { e.preventDefault(); window.__TAURI__.window.getCurrentWindow().close(); }
 });
@@ -408,6 +412,22 @@ window.__TAURI__.event.listen("tauri://drag-drop", (ev) => {
 // ---------- Start ----------
 
 buildList();
+// ---------- Watching the open file ----------
+// Polls the file's modification time (also catches editors that save by
+// replacing the file). On a change, a reload button shows; nothing reloads by itself.
+
+function reload() {
+  if (entry()) show(window.scrollY);
+}
+reloadBtn.addEventListener("click", reload);
+
+setInterval(async () => {
+  const c = current;
+  if (!c || !c.mtime || document.hidden || !reloadBtn.hidden) return;
+  const m = await invoke("file_mtime", { path: c.path });
+  if (c === current && m && m !== c.mtime) reloadBtn.hidden = false;
+}, 1000);
+
 // ---------- Paste (start screen when opened without a file) ----------
 // Paste Markdown and it opens like a file. There is no editing after that.
 
