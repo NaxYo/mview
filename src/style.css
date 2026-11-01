@@ -1,0 +1,151 @@
+/* ---------- Themes ----------
+   Each theme sets colours, fonts, size and spacing.
+   To add one: copy a block, change the values, and add it to THEMES in app.js. */
+
+[data-theme="paper"] {
+  --bg: #fbf8f1; --fg: #2b2620; --muted: #7a6f60; --accent: #9a4a1c;
+  --code-bg: #f1ebdd; --border: #e2d9c6; --sel: #f3dfb8;
+  --font: "Bitstream Charter", "Charter", Georgia, serif;
+  --head: "Bitstream Charter", "Charter", Georgia, serif;
+  --mono: "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  --size: 19px; --lh: 1.65;
+}
+[data-theme="clean"] {
+  --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --accent: #0b62d6;
+  --code-bg: #f3f4f6; --border: #e1e4e8; --sel: #cfe3ff;
+  --font: "Rethink Sans", "Ubuntu", "Liberation Sans", sans-serif;
+  --head: "Rethink Sans", "Ubuntu", sans-serif;
+  --mono: "DejaVu Sans Mono", monospace;
+  --size: 16px; --lh: 1.6;
+}
+[data-theme="night"] {
+  --bg: #16191f; --fg: #d7dce3; --muted: #8b95a3; --accent: #7cb7ff;
+  --code-bg: #20252e; --border: #2d333d; --sel: #2f4566;
+  --font: "Ubuntu", "DejaVu Sans", sans-serif;
+  --head: "Ubuntu", "DejaVu Sans", sans-serif;
+  --mono: "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  --size: 16px; --lh: 1.65;
+}
+[data-theme="sepia"] {
+  --bg: #f4ecd8; --fg: #3b2f1e; --muted: #85714f; --accent: #8a3b12;
+  --code-bg: #eadfc4; --border: #d9caa6; --sel: #e6cf98;
+  --font: "P052", "URW Palladio L", "Palatino Linotype", serif;
+  --head: "P052", "URW Palladio L", serif;
+  --mono: "Courier 10 Pitch", "Nimbus Mono PS", monospace;
+  --size: 20px; --lh: 1.7;
+}
+[data-theme="ember"] {
+  --bg: #1d1a17; --fg: #e6ddd0; --muted: #a39581; --accent: #e8955a;
+  --code-bg: #2a2521; --border: #3a332c; --sel: #5a3d26;
+  --font: Georgia, "DejaVu Serif", serif;
+  --head: Georgia, "DejaVu Serif", serif;
+  --mono: "Ubuntu Mono", monospace;
+  --size: 18px; --lh: 1.7;
+}
+[data-theme="terminal"] {
+  --bg: #0c0f0c; --fg: #c8e6c9; --muted: #6f8f71; --accent: #8be38f;
+  --code-bg: #141a14; --border: #233023; --sel: #1f4a24;
+  --font: "MesloLGS NF", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  --head: "MesloLGS NF", "Ubuntu Mono", monospace;
+  --mono: "MesloLGS NF", "Ubuntu Mono", monospace;
+  --size: 15px; --lh: 1.55;
+}
+[data-theme="large"] {
+  --bg: #ffffff; --fg: #000000; --muted: #444444; --accent: #0040b0;
+  --code-bg: #eeeeee; --border: #bbbbbb; --sel: #ffe58a;
+  --font: Verdana, "DejaVu Sans", sans-serif;
+  --head: Verdana, "DejaVu Sans", sans-serif;
+  --mono: "DejaVu Sans Mono", monospace;
+  --size: 21px; --lh: 1.75;
+}
+[data-theme="compact"] {
+  --bg: #fafafa; --fg: #222222; --muted: #6b6b6b; --accent: #b0305a;
+  --code-bg: #efefef; --border: #dddddd; --sel: #f6c9d8;
+  --font: "Ubuntu", "Liberation Sans", sans-serif;
+  --head: "Ubuntu Condensed", "Ubuntu", sans-serif;
+  --mono: "Ubuntu Mono", monospace;
+  --size: 14px; --lh: 1.45;
+}
+
+/* ---------- Layout ---------- */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font);
+  font-size: calc(var(--size) * var(--zoom, 1));
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--sel); }
+
+/* No max-width on purpose: text uses the whole window. */
+#doc { padding: 2.2em 3em 5em; overflow-wrap: break-word; }
+.empty { color: var(--muted); text-align: center; margin-top: 30vh; }
+
+/* ---------- Toolbar ---------- */
+
+#bar {
+  position: fixed; top: 10px; right: 14px; z-index: 10;
+  display: flex; gap: 6px; padding: 6px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  font: 13px/1 "Ubuntu", "DejaVu Sans", sans-serif;
+  opacity: .25; transition: opacity .15s;
+}
+#bar:hover, #bar:focus-within { opacity: 1; }
+#bar select, #bar button {
+  font: inherit; color: var(--fg); background: var(--code-bg);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 9px; cursor: pointer;
+}
+#bar button:hover, #bar select:hover { border-color: var(--accent); }
+
+/* ---------- Markdown ---------- */
+
+#doc h1, #doc h2, #doc h3, #doc h4, #doc h5, #doc h6 {
+  font-family: var(--head); line-height: 1.25; margin: 1.6em 0 .6em; font-weight: 700;
+}
+#doc > :first-child { margin-top: 0; }
+#doc h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+#doc h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: .2em; }
+#doc h3 { font-size: 1.25em; }
+#doc h4 { font-size: 1.05em; }
+#doc h5, #doc h6 { font-size: .95em; color: var(--muted); }
+
+#doc p, #doc ul, #doc ol, #doc blockquote, #doc pre, #doc table, #doc dl { margin: 0 0 1em; }
+#doc ul, #doc ol { padding-left: 1.6em; }
+#doc li + li { margin-top: .25em; }
+#doc li > ul, #doc li > ol { margin: .25em 0 0; }
+#doc li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.4em; }
+#doc input[type="checkbox"] { margin: 0 .5em 0 0; vertical-align: middle; }
+
+#doc a { color: var(--accent); text-decoration: none; }
+#doc a:hover { text-decoration: underline; }
+
+#doc code {
+  font-family: var(--mono); font-size: .9em;
+  background: var(--code-bg); padding: .12em .35em; border-radius: 4px;
+}
+#doc pre {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: .9em 1.1em; overflow-x: auto; line-height: 1.45;
+}
+#doc pre code { background: none; padding: 0; font-size: .88em; }
+
+#doc blockquote {
+  margin-left: 0; padding: .1em 1em; color: var(--muted);
+  border-left: 4px solid var(--border);
+}
+#doc hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
+#doc img { max-width: 100%; }
+
+#doc table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
+#doc th, #doc td { border: 1px solid var(--border); padding: .4em .8em; text-align: left; }
+#doc th { background: var(--code-bg); }
+
+#doc .footnote-definition { font-size: .9em; color: var(--muted); }
+#doc .footnote-definition p { display: inline; }
+
+/* GitHub-style alerts: > [!NOTE] etc. */
+#doc .markdown-alert { border-left-color: var(--accent); color: var(--fg); }
