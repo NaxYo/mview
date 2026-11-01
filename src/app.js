@@ -136,26 +136,151 @@ document.addEventListener("pointerdown", (e) => {
   if (!menu.hidden && !menu.contains(e.target) && !fab.contains(e.target)) setMenu(false);
 });
 
+// ---------- Tabs and history ----------
+// Each tab keeps its own trail of visited files: hist[i] is the file shown.
+// The trail is drawn as breadcrumbs; a click on a crumb goes back to it.
+// Only the active tab is rendered; the others render when you switch to them.
+
+const bar = $("top"), tabBar = $("tabs"), crumbs = $("crumbs");
+const tabs = [];   // { hist: [{ path, hash, y }], i }
+let active = -1;
+let current = null; // { path, dir } of the rendered file
+let seq = 0;        // drops renders that finish after a newer one started
+
+const tab = () => tabs[active];
+const entry = () => tab()?.hist[tab().i];
+const baseName = (p) => p.split("/").pop();
+const label = (p) => baseName(p).replace(/\.(md|markdown)$/i, "");
+
+function saveScroll() {
+  if (entry()) entry().y = window.scrollY;
+}
+
+// Go to a file in the active tab (forward entries are dropped, like a browser).
+function navigate(path, hash = "") {
+  if (!tab()) { newTab(path, hash, true); return; }
+  saveScroll();
+  const t = tab();
+  t.hist.splice(t.i + 1);
+  t.hist.push({ path, hash, y: null });
+  t.i++;
+  show();
+}
+
+function newTab(path, hash = "", focus = false) {
+  tabs.splice(active + 1, 0, { hist: [{ path, hash, y: null }], i: 0 });
+  if (focus || active < 0) { saveScroll(); active++; show(); }
+  else drawBar();
+}
+
+function goTo(i) {
+  const t = tab();
+  if (!t || i < 0 || i >= t.hist.length || i === t.i) return;
+  saveScroll();
+  t.i = i;
+  show();
+}
+
+function activate(k) {
+  if (k < 0 || k >= tabs.length || k === active) return;
+  saveScroll();
+  active = k;
+  show();
+}
+
+function closeTab(k) {
+  if (tabs.length <= 1) { window.__TAURI__.window.getCurrentWindow().close(); return; }
+  if (k !== active) {
+    tabs.splice(k, 1);
+    if (k < active) active--;
+    drawBar();
+    return;
+  }
+  tabs.splice(k, 1);
+  active = Math.min(k, tabs.length - 1);
+  show();
+}
+
+// Tab strip (only with 2+ tabs) and breadcrumbs (only after following a link).
+function drawBar() {
+  tabBar.replaceChildren(...tabs.map((t, k) => {
+    const p = t.hist[t.i].path;
+    const el = document.createElement("div");
+    el.className = "tab";
+    el.title = p;
+    el.setAttribute("aria-selected", String(k === active));
+    const name = document.createElement("span");
+    name.textContent = label(p);
+    const x = document.createElement("button");
+    x.className = "close";
+    x.textContent = "×";
+    x.title = "Close tab (Ctrl+W)";
+    x.addEventListener("click", (e) => { e.stopPropagation(); closeTab(k); });
+    el.append(name, x);
+    el.addEventListener("click", () => activate(k));
+    el.addEventListener("auxclick", (e) => { if (e.button === 1) closeTab(k); });
+    return el;
+  }));
+  tabBar.hidden = tabs.length < 2;
+
+  const t = tab();
+  crumbs.replaceChildren();
+  if (t) t.hist.forEach((h, i) => {
+    if (i) {
+      const sep = document.createElement("span");
+      sep.className = "sep";
+      sep.textContent = "›";
+      crumbs.append(sep);
+    }
+    const c = document.createElement("button");
+    c.className = "crumb" + (i > t.i ? " ahead" : "");
+    c.textContent = label(h.path);
+    c.title = h.path;
+    if (i === t.i) c.setAttribute("aria-current", "page");
+    c.addEventListener("click", () => goTo(i));
+    crumbs.append(c);
+  });
+  crumbs.hidden = !t || t.hist.length < 2;
+
+  bar.hidden = tabBar.hidden && crumbs.hidden;
+  crumbs.querySelector("[aria-current]")?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  document.documentElement.style.scrollPaddingTop = (bar.hidden ? 0 : bar.offsetHeight) + "px";
+}
+
 // ---------- Rendering ----------
 
-let current = null; // { path, dir }
-
-async function open(path, keepScroll = false) {
-  const y = window.scrollY;
+// Render the active tab's current file. `y` overrides the remembered scroll.
+async function show(y) {
+  drawBar();
+  const e = entry();
+  if (!e) return;
+  const n = ++seq;
   try {
-    const res = await invoke("render", { path, breaks: settings.breaks });
+    const res = await invoke("render", { path: e.path, breaks: settings.breaks });
+    if (n !== seq) return;
+    e.path = res.path;
     current = { path: res.path, dir: res.dir };
     doc.innerHTML = res.html;
     fixImages(res.dir);
     addHeadingIds();
-    window.scrollTo(0, keepScroll ? y : 0);
-  } catch (e) {
+  } catch (err) {
+    if (n !== seq) return;
+    current = null;
     doc.innerHTML = "";
     const p = document.createElement("p");
     p.className = "empty";
-    p.textContent = String(e);
+    p.textContent = String(err);
     doc.append(p);
   }
+  const to = y ?? e.y;
+  if (to != null) window.scrollTo(0, to);
+  else if (e.hash) scrollToId(e.hash);
+  else window.scrollTo(0, 0);
+}
+
+function scrollToId(id) {
+  const el = document.getElementById(id) || document.getElementsByName(id)[0];
+  if (el) el.scrollIntoView(); else window.scrollTo(0, 0);
 }
 
 function isRelative(url) {
@@ -194,22 +319,38 @@ function addHeadingIds() {
 }
 
 // ---------- Links ----------
+// Click: open here. Ctrl+click or middle click: new tab in the background.
+// Ctrl+Shift+click: new tab in front.
 
-doc.addEventListener("click", (e) => {
+function follow(e, inTab) {
   const a = e.target.closest("a");
   if (!a) return;
   const href = a.getAttribute("href") || "";
   e.preventDefault();
 
   if (href.startsWith("#")) {
-    const id = decodeURIComponent(href.slice(1));
-    (document.getElementById(id) || document.getElementsByName(id)[0])?.scrollIntoView();
+    scrollToId(decodeURIComponent(href.slice(1)));
   } else if (/^(https?:|mailto:)/i.test(href)) {
     invoke("open_external", { url: href });
   } else if (current && isRelative(href)) {
-    const file = decodeURI(href.split("#")[0]);
-    if (/\.(md|markdown)$/i.test(file)) open(resolve(current.dir, file));
+    const [rel, hash = ""] = href.split("#");
+    const file = decodeURI(rel);
+    if (!/\.(md|markdown)$/i.test(file)) return;
+    const path = resolve(current.dir, file);
+    const id = decodeURIComponent(hash);
+    if (inTab) newTab(path, id, e.shiftKey);
+    else navigate(path, id);
   }
+}
+doc.addEventListener("click", (e) => { if (e.button === 0) follow(e, e.ctrlKey || e.metaKey); });
+doc.addEventListener("auxclick", (e) => { if (e.button === 1) follow(e, true); });
+// Middle click must not start autoscroll or paste.
+doc.addEventListener("mousedown", (e) => { if (e.button === 1 && e.target.closest("a")) e.preventDefault(); });
+
+// Mouse back / forward buttons.
+document.addEventListener("mouseup", (e) => {
+  if (e.button === 3) { e.preventDefault(); goTo(tab()?.i - 1); }
+  else if (e.button === 4) { e.preventDefault(); goTo(tab()?.i + 1); }
 });
 
 // ---------- Controls ----------
@@ -225,27 +366,39 @@ function setBreaks(on) {
   if (settings.breaks === on) return;
   settings.breaks = on;
   saveSettings(); applyView();
-  if (current) open(current.path, true);
+  if (entry()) show(window.scrollY);
 }
 $("full").addEventListener("click", () => setBreaks(false));
 $("breaks").addEventListener("click", () => setBreaks(true));
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { setMenu(false); return; }
+  if (e.altKey && !e.ctrlKey) {
+    if (e.key === "ArrowLeft") { e.preventDefault(); goTo(tab()?.i - 1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); goTo(tab()?.i + 1); }
+    return;
+  }
   if (!e.ctrlKey) return;
+  const n = tabs.length;
   if (e.key === "+" || e.key === "=") { e.preventDefault(); zoomBy(0.1); }
   else if (e.key === "-") { e.preventDefault(); zoomBy(-0.1); }
   else if (e.key === "0") { e.preventDefault(); settings.zoom = 1; saveSettings(); applyView(); }
-  else if (e.key === "w" || e.key === "q") { e.preventDefault(); window.__TAURI__.window.getCurrentWindow().close(); }
+  else if (e.key === "Tab" || e.key === "PageDown" || e.key === "PageUp") {
+    e.preventDefault();
+    const step = e.key === "PageUp" || (e.key === "Tab" && e.shiftKey) ? -1 : 1;
+    if (n > 1) activate((active + step + n) % n);
+  }
+  else if (e.key === "w") { e.preventDefault(); closeTab(active); }
+  else if (e.key === "q") { e.preventDefault(); window.__TAURI__.window.getCurrentWindow().close(); }
 });
 
 // Drop a file on the window to open it.
 window.__TAURI__.event.listen("tauri://drag-drop", (ev) => {
   const p = ev.payload?.paths?.[0];
-  if (p) open(p);
+  if (p) navigate(p);
 });
 
 // ---------- Start ----------
 
 buildList();
-invoke("initial_path").then((p) => { if (p) open(p); });
+invoke("initial_path").then((p) => { if (p) navigate(p); });

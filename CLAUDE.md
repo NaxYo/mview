@@ -12,8 +12,8 @@ this one.
 
 ## Scope — read this first
 
-It is a VIEWER. Not an editor. Do not add editing, file trees, tabs, sync, export,
-plugins or settings screens. Exactly three features:
+It is a VIEWER. Not an editor. Do not add editing, file trees, sync, export,
+plugins or settings screens. Exactly four features:
 
 1. **Double-click a `.md` file → it opens.** The file manager passes the path as the
    first argument; the app renders it. Dropping a file on the window also opens it.
@@ -25,13 +25,23 @@ plugins or settings screens. Exactly three features:
    it). "Line breaks" keeps every line break as in the file. There is never a max-width
    column — text always uses the full window. Do not add one.
 
+4. **Following links: breadcrumbs + tabs** (asked for 2026-11-01). Each tab keeps the trail
+   of `.md` links followed in it, shown as breadcrumbs at the top; a click on a crumb goes
+   back (later crumbs stay, dimmed, until a new link is followed — browser-style). Ctrl+click
+   or middle-click opens a link in a background tab; Ctrl+Shift+click in front. The tab
+   strip shows only with 2+ tabs, the breadcrumbs only after a link was followed — a plain
+   single file looks exactly as before. Only the active tab is rendered. Tabs are not
+   remembered between launches.
+
 All settings sit behind one round "Aa" floating button at the bottom right that opens a
 mobile-style menu (text size, Full width / Line breaks, theme list with stars). Esc or a
 click outside closes it. Keep it that way — no toolbars, no menu bars, no settings window.
 
 Small conveniences that exist and should stay: web links open in the browser, relative
 `.md` links open in the same window, relative images display, in-page `#heading` links
-work, Ctrl +/−/0 for size, Ctrl W/Q to close.
+work (also `file.md#heading` across files), Ctrl +/−/0 for size, Ctrl W closes the tab
+(the window when it is the last), Ctrl Q closes the window, Ctrl Tab / Ctrl PgUp/PgDn
+switch tabs, Alt ←/→ and the mouse back/forward buttons move along the trail.
 
 Not built (on purpose, until he asks): syntax highlighting in code blocks, live reload
 when the file changes, table of contents, search, printing/export.
@@ -81,7 +91,9 @@ on in Cargo.toml), installs it to `~/.local/bin/mdview`, writes
 Run it after every change — he only uses the app by double-clicking files.
 
 Checking the UI: do **not** click around his real screen with xdotool (dual monitors,
-3840×1080; clicks landed in his browser). Instead load `src/` in headless Chrome:
+3840×1080; clicks landed in his browser). There is no Xvfb. Headless Chrome screenshots of
+a scrolled page come out blank — test scroll behaviour by logging values, not by picture.
+Do not name a global `top` in `app.js` (it is `window.top`; the whole script fails). Instead load `src/` in headless Chrome:
 a scratch HTML copy of `index.html` with absolute `file://` paths to the project's
 css/js, a `stub.js` defining `window.__TAURI__` (`core.invoke` returning fake
 `initial_path`/`render` results, `core.convertFileSrc`, `event.listen`,
