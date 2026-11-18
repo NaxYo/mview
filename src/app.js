@@ -263,7 +263,7 @@ async function show(y) {
       ? await invoke("render_text", { text: e.text, breaks: settings.breaks })
       : await invoke("render", { path: e.path, breaks: settings.breaks });
     if (n !== seq) return;
-    if (e.text == null) e.path = res.path;
+    if (e.text == null) { e.path = res.path; remember(res.path); }
     current = { path: res.path, dir: res.dir, mtime: res.mtime };
     reloadBtn.hidden = true;
     doc.innerHTML = res.html;
@@ -455,7 +455,79 @@ pasteBox.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); openPasted(pasteBox.value); }
 });
 
+// ---------- Recent files (start screen) ----------
+// Every file shown is remembered (newest first). Stored apart from the settings.
+
+const RECENT_MAX = 25;
+
+function loadRecent() {
+  try {
+    const r = JSON.parse(localStorage.getItem("recent") || "[]");
+    return Array.isArray(r) ? r.filter((x) => x && typeof x.path === "string") : [];
+  } catch { return []; }
+}
+function saveRecent(list) {
+  try { localStorage.setItem("recent", JSON.stringify(list.slice(0, RECENT_MAX))); } catch {}
+}
+function remember(path) {
+  // Re-read first: other windows may have added files since this one started.
+  saveRecent([{ path, t: Date.now() }, ...loadRecent().filter((r) => r.path !== path)]);
+}
+function forget(path) {
+  saveRecent(loadRecent().filter((r) => r.path !== path));
+  drawRecent();
+}
+
+function ago(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  if (s < 86400) return Math.floor(s / 3600) + " h ago";
+  if (s < 86400 * 7) return Math.floor(s / 86400) + " d ago";
+  return new Date(t).toLocaleDateString();
+}
+
+const recentList = $("recent");
+
+function drawRecent() {
+  const list = loadRecent();
+  recentList.replaceChildren(...list.map((r) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "open";
+    btn.title = r.path;
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = baseName(r.path);
+    const dir = document.createElement("span");
+    dir.className = "dir";
+    // rtl keeps the end of a long folder visible; the bdi stops it reordering the text.
+    const bdi = document.createElement("bdi");
+    bdi.textContent = r.path.slice(0, -baseName(r.path).length - 1).replace(/^\/home\/[^/]+/, "~") || "/";
+    dir.append(bdi);
+    const when = document.createElement("span");
+    when.className = "when";
+    when.textContent = ago(r.t);
+    btn.append(name, dir, when);
+    btn.addEventListener("click", () => { if (!li.classList.contains("missing")) navigate(r.path); });
+
+    const x = document.createElement("button");
+    x.className = "forget";
+    x.textContent = "×";
+    x.title = "Remove from the list";
+    x.addEventListener("click", () => forget(r.path));
+
+    li.append(btn, x);
+    // Files that were moved or deleted stay listed, crossed out, until removed.
+    invoke("file_mtime", { path: r.path }).then((m) => {
+      if (!m) { li.classList.add("missing"); btn.title = r.path + " (not found)"; }
+    });
+    return li;
+  }));
+  $("no-recent").hidden = list.length > 0;
+}
+
 invoke("initial_path").then((p) => {
   if (p) navigate(p);
-  else { doc.hidden = true; pasteBox.parentElement.hidden = false; pasteBox.focus(); }
+  else { doc.hidden = true; drawRecent(); start.hidden = false; pasteBox.focus(); }
 });

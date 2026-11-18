@@ -23,11 +23,43 @@ body {
 #doc { padding: 2.2em 3em 6em; overflow-wrap: break-word; }
 .empty { color: var(--muted); text-align: center; margin-top: 30vh; }
 
-/* Start screen when opened without a file: one big paste box. */
-#start { position: fixed; inset: 0; padding: 28px 28px 96px; display: flex; }
-#start[hidden], #doc[hidden] { display: none; }
+/* Start screen when opened without a file: recent files, then a paste box. */
+#start {
+  position: fixed; inset: 0; padding: 28px 28px 96px;
+  display: flex; flex-direction: column; gap: 20px;
+  font: calc(15px * var(--zoom, 1))/1.35 var(--ui);
+}
+#start[hidden], #doc[hidden], #no-recent[hidden] { display: none; }
+#recent-wrap { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#start h2 {
+  margin: 0 0 8px; font-size: .75em; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+#no-recent { margin: 0; color: var(--muted); }
+#recent { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+#recent li { display: flex; align-items: center; border-radius: 10px; }
+#recent li:hover { background: var(--code-bg); }
+#recent .open {
+  flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 14px;
+  padding: 9px 12px; text-align: left; cursor: pointer;
+  font: inherit; color: var(--fg); background: none; border: 0; border-radius: 10px;
+}
+#recent .open:focus-visible { outline: 2px solid var(--accent); }
+#recent .name { flex: none; font-weight: 600; color: var(--accent); }
+#recent .dir { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; direction: rtl; text-align: left; color: var(--muted); }
+#recent .when { flex: none; color: var(--muted); font-size: .9em; }
+#recent li.missing .open { cursor: default; }
+#recent li.missing .name { color: var(--muted); text-decoration: line-through; }
+#recent .forget {
+  flex: none; width: 30px; height: 30px; margin-right: 6px; border-radius: 50%;
+  font: inherit; font-size: 1.1em; color: var(--muted); background: none; border: 0;
+  cursor: pointer; opacity: 0;
+}
+#recent li:hover .forget, #recent .forget:focus-visible { opacity: .7; }
+#recent .forget:hover { opacity: 1; background: var(--sel); }
+
 #paste {
-  flex: 1; resize: none; padding: 1.4em 1.6em;
+  flex: 1 0 150px; resize: none; padding: 1.4em 1.6em;
   background: var(--code-bg); color: var(--fg);
   border: 2px dashed var(--border); border-radius: 16px; outline: none;
   font: calc(15px * var(--zoom, 1))/1.5 var(--mono);

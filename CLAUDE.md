@@ -18,9 +18,13 @@ plugins or settings screens. Exactly four features:
 1. **Double-click a `.md` file → it opens.** The file manager passes the path as the
    first argument; the app renders it. Dropping a file on the window also opens it.
    Each double-click opens its own window.
-   Opened with no file (from the app menu), it shows one big paste box: paste Markdown
-   (Ctrl+V or middle-click; Ctrl+Enter for typed text) and it is shown like a file, titled
-   "Pasted". No editing after that. Relative links/images in pasted text cannot resolve.
+   Opened with no file (from the app menu), it shows the start screen: **recent files**
+   (asked 2026-11-19) on top, a paste box below. Every file shown is remembered, newest
+   first, max 25, in `localStorage` key `recent` = `[{ path, t }]` (apart from settings).
+   Click one to open it; × removes it; moved/deleted files show crossed out. The paste box
+   fills the space the list leaves (min 150 px): paste Markdown (Ctrl+V or middle-click;
+   Ctrl+Enter for typed text) and it is shown like a file, titled "Pasted". No editing
+   after that. Relative links/images in pasted text cannot resolve.
 2. **Themes** — 25 presets of colours + fonts + size + line spacing, plus A−/A+ text size.
    A star on a theme pins it to the top of the list. Everything is remembered between launches.
 3. **Full width / Line breaks switch.** "Full width" joins the file's soft line breaks so

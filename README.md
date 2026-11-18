@@ -2,8 +2,8 @@
 
 A small, fast Markdown **viewer** for Linux, built with Tauri 2. It is not an editor.
 
-- Double-click a `.md` file to open it, or drop one on the window. Open it with no file
-  and you can paste Markdown.
+- Double-click a `.md` file to open it, or drop one on the window. Open the app with no
+  file to see your recent files, or to paste Markdown.
 - 25 themes (colours, fonts, size, line spacing). Star the ones you like.
 - **Full width** joins hard-wrapped lines so paragraphs fill the window. **Line breaks**
   keeps them as in the file.

@@ -17,8 +17,13 @@
   <main id="doc"></main>
 
   <section id="start" hidden>
+    <div id="recent-wrap">
+      <h2>Recent files</h2>
+      <ul id="recent" aria-label="Recent files"></ul>
+      <p id="no-recent">No files opened yet.</p>
+    </div>
     <textarea id="paste" spellcheck="false" aria-label="Paste Markdown"
-      placeholder="Paste Markdown here (Ctrl+V)&#10;&#10;…or drop a .md file on the window."></textarea>
+      placeholder="Paste Markdown here (Ctrl+V), or drop a .md file on the window."></textarea>
   </section>
 
   <div id="menu" role="dialog" aria-label="View settings" hidden>
